@@ -2,40 +2,38 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Els Meus Taulers (Boards)</h1>
-        
-        {{-- Botó per CREAR un nou tauler --}}
-        <a href="{{ route('boards.create') }}" 
-           class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">
+    
+    <!-- Contingut del tauler principal -->
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="text-3xl font-extrabold text-indigo-700">Els Meus Taulers</h1>
+        <a href="{{ route('boards.create') }}"
+           class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
             + Nou Tauler
         </a>
     </div>
 
-    {{-- Llista de Taulers --}}
     @if ($boards->isEmpty())
-        <div class="text-center py-12 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
-            <p class="text-xl text-gray-500">Encara no teniu taulers creats.</p>
-            <p class="text-gray-400 mt-2">Feu clic a "Nou Tauler" per començar el vostre projecte.</p>
-        </div>
+        <p class="text-center text-gray-500 py-12">Encara no has creat cap tauler. Comença ara!</p>
     @else
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach ($boards as $board)
-                <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 ease-in-out border border-gray-100">
-                    <div class="p-6">
-                        {{-- Enllaç per veure els detalls del tauler --}}
-                        <a href="{{ route('boards.show', $board->id) }}" class="text-xl font-semibold text-indigo-600 hover:text-indigo-800 transition duration-150">
-                            {{ $board->title }}
-                        </a>
-                        
-                        {{-- S'usa 'Sense descripció.' com a text per defecte --}}
-                        <p class="text-gray-500 mt-2 line-clamp-3">{{ $board->description ?? 'Sense descripció.' }}</p>
-                        
-                        <div class="mt-4 flex justify-between items-center text-sm text-gray-400">
-                            <span>Creat: {{ $board->created_at->diffForHumans() }}</span>
-                            
-                            {{-- Enllaç per EDITAR el tauler --}}
-                            <a href="{{ route('boards.edit', $board->id) }}" class="text-xs text-indigo-500 hover:text-indigo-700 font-medium">
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300 border-t-4 border-indigo-500">
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">{{ $board->title }}</h2>
+                    <p class="text-sm text-gray-600 mb-4 line-clamp-2">{{ $board->description }}</p>
+                    
+                    <div class="flex justify-between items-center mt-4 border-t pt-3">
+                        <span class="text-xs text-gray-400">Creat: {{ $board->created_at->diffForHumans() }}</span>
+
+                        <div class="space-x-3">
+                            {{-- AQUEST ÉS L'ENLLAÇ CLAU PER VEURE EL KANBAN DE NOTES --}}
+                            <a href="{{ route('boards.notes.index', $board) }}" 
+                               class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition duration-150">
+                                Veure Kanban &rarr;
+                            </a>
+
+                            {{-- Enllaç d'edició del Tauler --}}
+                            <a href="{{ route('boards.edit', $board) }}" 
+                               class="text-sm font-semibold text-gray-500 hover:text-gray-700 transition duration-150">
                                 Editar
                             </a>
                         </div>

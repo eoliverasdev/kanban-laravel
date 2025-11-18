@@ -4,17 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Board; 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // <-- NECESSARI per a l'autenticació
 
 class BoardController extends Controller
 {
     /**
      * Display a listing of the resource.
-     * Muestra una lista de todos los taulers disponibles.
+     * Muestra una lista de los taulers del usuario autenticado.
      */
     public function index()
     {
-        // Obtenir TOTS els taulers, sense filtre d'usuari
-        $boards = Board::all(); 
+        // IMPORTANT: Ara recuperem NOMÉS els taulers de l'usuari autenticat
+        // Assumim que la relació 'boards' existeix al model User
+        $boards = Auth::user()->boards; 
 
         // Aquí es retorna la vista (template) 'resources/views/boards/index.blade.php'
         return view('boards.index', compact('boards'));
@@ -32,22 +34,22 @@ class BoardController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     * Almacena un nuevo tablero en la base de datos.
+     * Almacena un nuevo tablero en la base de datos, assignant l'usuari actual com a propietari.
      */
     public function store(Request $request)
     {
-        // 1. Validació: Assegura que el títol és present i que les dades tenen la mida correcta.
+        // 1. Validació
         $validated = $request->validate([
             'title' => 'required|string|max:150',
             'description' => 'nullable|string|max:500',
         ]);
 
-        // 2. Creació del Tauler, assignant TEMPORALMENT l'owner_id = 1
-        // AQUEST ÉS EL FIX: La base de dades requereix owner_id.
+        // 2. Creació del Tauler
         $board = Board::create([
             'title' => $validated['title'],
             'description' => $validated['description'],
-            'owner_id' => 1, 
+            // FIX CRÍTIC: Assignem l'ID de l'usuari autenticat com a propietari
+            'owner_id' => Auth::id(), 
         ]);
 
         // 3. Redirecció a la pàgina d'índex amb un missatge de confirmació en català.
@@ -57,46 +59,54 @@ class BoardController extends Controller
 
     /**
      * Show the form for editing the specified resource.
-     * Muestra el formulario para editar un tablero existente.
+     * Inclou comprovació de propietat.
      */
-    public function edit(Board $board)
+    public function edit(Board $board) 
     {
-        // El tauler ja ha estat trobat per Laravel ($board)
+        // COMPROVACIÓ DE SEGURETAT
+        if ($board->owner_id !== Auth::id()) {
+            abort(403, 'Accés denegat. Aquest tauler no et pertany.');
+        }
         return view('boards.edit', compact('board'));
     }
 
     /**
      * Update the specified resource in storage.
-     * Actualiza un tablero específico a la base de dades.
+     * Inclou comprovació de propietat.
      */
-    public function update(Request $request, Board $board)
+    public function update(Request $request, Board $board) 
     {
-        // 1. Validació
+        // COMPROVACIÓ DE SEGURETAT
+        if ($board->owner_id !== Auth::id()) {
+            abort(403, 'Accés denegat. Aquest tauler no et pertany.');
+        }
+        
         $validated = $request->validate([
             'title' => 'required|string|max:150',
             'description' => 'nullable|string|max:500',
         ]);
 
-        // 2. Actualització del Tauler
         $board->update($validated);
 
-        // 3. Redirecció a la pàgina d'índex amb un missatge de confirmació
         return redirect()->route('boards.index')
                          ->with('success', "Tauler '{$board->title}' actualitzat correctament!");
     }
 
     /**
      * Remove the specified resource from storage.
-     * Elimina un tauler de la base de dades.
+     * Inclou comprovació de propietat.
      */
-    public function destroy(Board $board)
+    public function destroy(Board $board) 
     {
+        // COMPROVACIÓ DE SEGURETAT
+        if ($board->owner_id !== Auth::id()) {
+            abort(403, 'Accés denegat. Aquest tauler no et pertany.');
+        }
+
         $title = $board->title;
         
-        // 1. Eliminació del Tauler
         $board->delete();
 
-        // 2. Redirecció a la pàgina d'índex amb un missatge de confirmació
         return redirect()->route('boards.index')
                          ->with('success', "Tauler '{$title}' eliminat correctament.");
     }

@@ -43,10 +43,10 @@
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Estat de la Nota</label>
                 <select name="status" id="status"
                         class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('status') border-red-500 @enderror">
-                    {{-- Per defecte, seleccionem 'Pendent' --}}
-                    <option value="pending" {{ old('status', 'pending') == 'pending' ? 'selected' : '' }}>Pendent</option>
-                    <option value="in_progress" {{ old('status') == 'in_progress' ? 'selected' : '' }}>En Progrés</option>
-                    <option value="done" {{ old('status') == 'done' ? 'selected' : '' }}>Finalitzat</option>
+                    
+                    <option value="pending" @selected(old('status', 'pending') == 'pending')>Pendent</option>
+                    <option value="in_progress" @selected(old('status') == 'in_progress')>En Progrés</option>
+                    <option value="done" @selected(old('status') == 'done')>Finalitzat</option>
                 </select>
 
                 @error('status')

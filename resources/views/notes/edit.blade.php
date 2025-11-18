@@ -1,4 +1,4 @@
-@extends('layout')
+@extends('layout') 
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
@@ -16,8 +16,7 @@
         
         <p class="text-sm text-gray-500 mb-4 border-b pb-4">Editant nota per al tauler: <span class="font-semibold text-indigo-700">{{ $board->title }}</span></p>
 
-        {{-- El formulari apunta a la ruta boards.notes.update.
-             Utilitzem @method('PUT') per simular la petició PUT/PATCH --}}
+        {{-- El formulari apunta a la ruta boards.notes.update, que està gestionada pel NoteController.update --}}
         <form action="{{ route('boards.notes.update', ['board' => $board->id, 'note' => $note->id]) }}" method="POST">
             @csrf 
             @method('PUT')
@@ -30,6 +29,30 @@
                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('title') border-red-500 @enderror">
                 
                 @error('title')
+                    <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+            
+            <div class="mb-4">
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Estat (Columna)</label>
+                <select name="status" id="status" required
+                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('status') border-red-500 @enderror">
+                    
+                    {{-- Iterem pels estats permesos (vistos des del controlador) --}}
+                    @foreach ($statuses as $status)
+                        <option value="{{ $status }}" 
+                                {{-- Selecciona l'opció si és l'estat actual de la nota o l'antic valor --}}
+                                {{ old('status', $note->status) === $status ? 'selected' : '' }}>
+                            {{ match($status) {
+                                'pending' => 'PENDENT',
+                                'in_progress' => 'EN PROCÉS',
+                                'done' => 'FINALITZADA',
+                                default => 'Desconegut'
+                            } }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('status')
                     <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
                 @enderror
             </div>
