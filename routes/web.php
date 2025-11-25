@@ -3,41 +3,31 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\NoteController; 
 use App\Http\Controllers\BoardController;
-use App\Http\Controllers\AuthController; // <-- NOU: Importació correcta del teu controlador
-use Illuminate\Support\Facades\Auth;    // <-- CORRECTE: Importació de la Façana Auth de Laravel
+use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Auth;
 
 // --- RUTES PÚBLIQUES ---
-
-// Ruta de benvinguda
 Route::get('/', function () {
     return view('welcome');
 });
 
 // --- RUTES D'AUTENTICACIÓ ---
+// Aquí van les teves rutes d'autenticació, login, registre, etc.
+// Route::get('/login', ...);
+// Route::post('/login', ...);
+// ...
 
-// 1. LOGIN: Mostra el formulari i processa la sessió
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login'); // <-- Ara AuthController::class funciona
-Route::post('/login', [AuthController::class, 'login']);
-
-// 2. LOGOUT: Tanca la sessió
-Route::post('/logout', function () {
-    Auth::logout();
-    // Tanca la sessió i redirigeix a la pàgina principal.
-    return redirect('/');
-
-})->name('logout');
-// REGISTRE: Mostra el formulari i processa el nou usuari
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register'); // <-- Ara AuthController::class funciona
-Route::post('/register', [AuthController::class, 'register']);
-
-
-// --- GRUP DE RUTES PROTEGIDES ---
-// Totes les rutes d'aquí dins requereixen que l'usuari estigui autenticat ('middleware auth').
+// --- RUTES PROTEGIDES (usuari autenticat) ---
 Route::middleware(['auth'])->group(function () {
-    
-    // Rutes de Taulers (boards.index, boards.create, etc.)
+
+    // Taulers
     Route::resource('boards', BoardController::class);
 
-    // Rutes Anidades per a les Notes (boards.notes.index, etc.)
+    // 🔥 DRAG & DROP — primer, per evitar conflicte amb resource()
+    // Fem servir PATCH perquè el JS fa fetch amb method: 'PATCH'
+    Route::patch('/boards/{board}/notes/{note}/move', [NoteController::class, 'move'])
+        ->name('boards.notes.move');
+
+    // Notes (CRUD complet, nested resource)
     Route::resource('boards.notes', NoteController::class);
 });

@@ -5,136 +5,198 @@ namespace App\Http\Controllers;
 use App\Models\Board;
 use App\Models\Note;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Facades\Auth;
 
-// Utilitzem la referència completa (Controller) per garantir l'herència.
-class NoteController extends \App\Http\Controllers\Controller
+class NoteController extends Controller
 {
+    // ✅ Estats disponibles al Kanban (ELS MATEIXOS QUE A LA BD)
     private const ALLOWED_STATUSES = ['pending', 'in_progress', 'done'];
 
-    // S'HA ELIMINAT EL CONSTRUCTOR PER EVITAR L'ERROR DE MIDDLEWARE
+    private const STATUS_LABELS = [
+        'pending'     => 'Per fer',
+        'in_progress' => 'En curs',
+        'done'        => 'Fet',
+    ];
+
+    private const STATUS_DOT_COLORS = [
+        'pending'     => 'bg-gray-400',
+        'in_progress' => 'bg-blue-400',
+        'done'        => 'bg-green-500',
+    ];
+
+    private function statusLabel(string $status): string
+    {
+        return self::STATUS_LABELS[$status] ?? strtoupper($status);
+    }
+
+    private function statusDotColor(string $status): string
+    {
+        return self::STATUS_DOT_COLORS[$status] ?? 'bg-gray-400';
+    }
 
     /**
-     * FUNCIÓ INTERNA PER COMPROVAR LA PROPIETAT DEL TAULER
+     * Comprova que el tauler és de l’usuari autenticat.
      */
     private function checkBoardOwnership(Board $board)
     {
-        // 1. Assegurem-nos d'estar autenticats
+        $isApi = request()->ajax() || request()->wantsJson();
+
         if (!Auth::check()) {
-            // Si no està autenticat, redirigim a l'índex de taulers
-            return redirect()->route('boards.index')->with('error', 'Inicia sessió per continuar.');
+            if ($isApi) {
+                return response()->json(['error' => 'Sessió no iniciada.'], 403);
+            }
+            return redirect()->route('login')->with('error', 'Inicia sessió per continuar.');
         }
 
-        // 2. Si l'usuari actual no és el propietari, denega l'accés
         if ($board->owner_id !== Auth::id()) {
-            abort(403, 'Accés denegat. Aquest tauler no et pertany.');
+            if ($isApi) {
+                return response()->json(['error' => 'Accés denegat a aquest tauler.'], 403);
+            }
+            abort(403, 'Accés denegat a aquest tauler.');
         }
-        
-        return null; // Comprovació correcta
+
+        return null;
     }
 
     /**
-     * Mostra totes les notes per a un tauler específic. (La vista de 3 columnes)
+     * Llista de notes en format Kanban (3 columnes).
      */
-    public function index(Board $board) 
+    public function index(Board $board)
     {
-        // 1. COMPROVACIÓ DE SEGURETAT
         $authCheck = $this->checkBoardOwnership($board);
-        if ($authCheck) {
-            return $authCheck; 
+        if ($authCheck) return $authCheck;
+
+        // Agrupem totes les notes del tauler per estat
+        $grouped = $board->notes()
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->groupBy('status');
+
+        // Preparem les columnes amb etiqueta, color i col·lecció de notes
+        $columns = [];
+        foreach (self::ALLOWED_STATUSES as $status) {
+            $columns[$status] = [
+                'key'        => $status,
+                'label'      => $this->statusLabel($status),
+                'dot_color'  => $this->statusDotColor($status),
+                'notes'      => $grouped->get($status) ?? collect(),
+            ];
         }
-        
-        // Lògica de la vista Kanban (sense canvis)
-        $notesByStatus = $board->notes()
-             ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'done')") 
-             ->orderBy('position', 'asc')
-             ->get()
-             ->groupBy('status');
 
-        $statuses = self::ALLOWED_STATUSES;
-        $groupedNotes = collect($statuses)->mapWithKeys(function ($status) use ($notesByStatus) {
-            return [$status => $notesByStatus->get($status, collect())];
-        });
-
-        return view('notes.index', compact('board', 'groupedNotes', 'statuses'));
+        return view('notes.index', [
+            'board'   => $board,
+            'columns' => $columns,
+        ]);
     }
 
     /**
-     * Mostra el formulari de creació de nota.
+     * Formulari de creació.
      */
     public function create(Board $board)
     {
         $authCheck = $this->checkBoardOwnership($board);
         if ($authCheck) return $authCheck;
 
-        $statuses = self::ALLOWED_STATUSES;
-        return view('notes.create', compact('board', 'statuses'));
+        // Etiquetes d’estat per al select del formulari
+        $note_statuses = self::STATUS_LABELS;
+
+        return view('notes.create', compact('board', 'note_statuses'));
     }
 
     /**
-     * Crea i desa una nova nota.
+     * Desa una nova nota.
      */
     public function store(Request $request, Board $board)
     {
         $authCheck = $this->checkBoardOwnership($board);
         if ($authCheck) return $authCheck;
-        
+
         $validated = $request->validate([
-            'title' => 'required|string|max:150',
+            'title'       => 'required|string|max:150',
             'description' => 'nullable|string|max:500',
-            'status' => ['required', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
+            'status'      => ['required', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
         ]);
 
-        $note = $board->notes()->create(array_merge($validated, ['position' => 0]));
+        $note = $board->notes()->create($validated)->fresh();
 
-        return redirect()->route('boards.notes.index', $board)
-                          ->with('success', "Nota '{$note->title}' creada correctament.");
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'message' => 'Nota creada correctament.',
+                'note'    => [
+                    'id'           => $note->id,
+                    'title'        => $note->title,
+                    'description'  => $note->description,
+                    'status'       => $note->status,
+                    'status_label' => $this->statusLabel($note->status),
+                ],
+            ], 201);
+        }
+
+        return redirect()
+            ->route('boards.notes.index', $board)
+            ->with('success', 'Nota creada correctament.');
     }
 
     /**
-     * Mètode show redirigit (no s'utilitza a Kanban).
-     */
-    public function show(Board $board, Note $note)
-    {
-        // Si per error s'accedeix a la ruta show, el millor és enviar-lo a l'índex de notes (la vista de 3 columnes)
-        // en lloc d'eliminar el mètode i trencar les rutes resource.
-        return redirect()->route('boards.notes.index', $board); 
-    }
-
-    /**
-     * Mostra el formulari d'edició.
+     * Formulari d’edició.
      */
     public function edit(Board $board, Note $note)
     {
         $authCheck = $this->checkBoardOwnership($board);
         if ($authCheck) return $authCheck;
 
-        if ($note->board_id !== $board->id) abort(404); 
-        
-        $statuses = self::ALLOWED_STATUSES;
-        return view('notes.edit', compact('board', 'note', 'statuses'));
+        if ($note->board_id !== $board->id) {
+            abort(404);
+        }
+
+        $note_statuses = self::STATUS_LABELS;
+
+        return view('notes.edit', compact('board', 'note', 'note_statuses'));
     }
 
     /**
-     * Actualitza una nota existent.
+     * Actualitza una nota (form o AJAX inline).
      */
     public function update(Request $request, Board $board, Note $note)
     {
         $authCheck = $this->checkBoardOwnership($board);
         if ($authCheck) return $authCheck;
-        
-        if ($note->board_id !== $board->id) abort(404); 
-        
+
+        if ($note->board_id !== $board->id) {
+            abort(404);
+        }
+
         $validated = $request->validate([
-            'title' => 'required|string|max:150',
+            'title'       => 'required|string|max:150',
             'description' => 'nullable|string|max:500',
-            'status' => ['required', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
+            // status opcional, però si ve ha de ser un dels 3
+            'status'      => ['nullable', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
         ]);
 
-        $note->update($validated);
+        // Si no ens passa status, no el toquem
+        if (array_key_exists('status', $validated) && $validated['status'] === null) {
+            unset($validated['status']);
+        }
 
-        return redirect()->route('boards.notes.index', $board)
-                          ->with('success', "Nota '{$note->title}' actualitzada correctament.");
+        $note->update($validated);
+        $fresh = $note->fresh();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'message' => 'Nota actualitzada correctament.',
+                'note'    => [
+                    'id'           => $fresh->id,
+                    'title'        => $fresh->title,
+                    'description'  => $fresh->description,
+                    'status'       => $fresh->status,
+                    'status_label' => $this->statusLabel($fresh->status),
+                ],
+            ], 200);
+        }
+
+        return redirect()
+            ->route('boards.notes.index', $board)
+            ->with('success', 'Nota actualitzada correctament.');
     }
 
     /**
@@ -144,13 +206,55 @@ class NoteController extends \App\Http\Controllers\Controller
     {
         $authCheck = $this->checkBoardOwnership($board);
         if ($authCheck) return $authCheck;
-        
-        if ($note->board_id !== $board->id) abort(404); 
-        
-        $title = $note->title;
+
+        if ($note->board_id !== $board->id) {
+            abort(404);
+        }
+
         $note->delete();
 
-        return redirect()->route('boards.notes.index', $board)
-                          ->with('success', "Nota '{$title}' eliminada correctament.");
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'message' => 'Nota eliminada correctament.',
+            ], 200);
+        }
+
+        return redirect()
+            ->route('boards.notes.index', $board)
+            ->with('success', 'Nota eliminada correctament.');
+    }
+
+    /**
+     * Mou nota entre columnes (Drag & Drop).
+     * Espera AJAX (PATCH/POST) amb 'status' => pending|in_progress|done
+     */
+    public function move(Request $request, Board $board, Note $note)
+    {
+        $authCheck = $this->checkBoardOwnership($board);
+        if ($authCheck) return $authCheck;
+
+        if ($note->board_id !== $board->id) {
+            return response()->json(['error' => 'Nota no trobada en aquest tauler.'], 404);
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
+        ]);
+
+        $note->status = $validated['status'];
+        $note->save();
+
+        $fresh = $note->fresh();
+
+        return response()->json([
+            'message' => 'Nota moguda correctament.',
+            'note'    => [
+                'id'           => $fresh->id,
+                'title'        => $fresh->title,
+                'description'  => $fresh->description,
+                'status'       => $fresh->status,
+                'status_label' => $this->statusLabel($fresh->status),
+            ],
+        ], 200);
     }
 }

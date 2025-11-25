@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{-- 🚨 ADDICIÓ CLAU 1: CSRF Token necessari per a les peticions AJAX a Laravel (Desar/Eliminar) --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
     <title>Tauler Kanban</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -32,7 +35,11 @@
         @yield('content')
     </main>
 
-    {{-- FOOTER O SCRIPTS ADDICIONALS AQUÍ --}}
+    {{-- 🚨 ADDICCIÓ CLAU 2: SortableJS per a la funcionalitat de Drag & Drop --}}
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+    {{-- Aquí es carregarà l'script de la vista (p. ex., notes/index.blade.php) --}}
+    @yield('scripts')
 
 </body>
 </html>
