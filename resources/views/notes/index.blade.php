@@ -21,12 +21,6 @@
                     @endif
                 </div>
 
-                <a
-                    href="{{ route('boards.notes.create', $board) }}"
-                    class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded shadow-sm transition"
-                >
-                    + Nova nota
-                </a>
             </div>
 
             @if (session('success'))
