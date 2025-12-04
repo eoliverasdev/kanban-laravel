@@ -54,8 +54,9 @@ migrations/
 1. Clonar el repositorio:
    ```bash
    git clone https://github.com/eoliverasdev/kanban-laravel.git
-
+   
 2. Instalar dependencias:
+   ```
    composer install
    npm install && npm run build
 
@@ -63,14 +64,17 @@ migrations/
    cp .env.example .env
 
 4. Generar key:
+   ```
    php artisan key:generate
 
 5. Configurar base de datos .env
 
 6. Ejecutar migraciones
+   ```
    php artisan migrate
 
 7. Levantar servidor
+   ```
    php artisan serve
 
 
