@@ -31,6 +31,7 @@ Aplicación Kanban desarrollada con **Laravel** y **MySQL**. Permite la gestión
 ---
 
 ## 📂 Estructura del proyecto (simplificada)
+```
 /app
 /Http
 /Controllers
@@ -44,14 +45,14 @@ notes/
 web.php
 /database
 migrations/
-
+```
 
 ---
 
 ## ⚙️ Instalación
 
 1. Clonar el repositorio:
-   bash
+   ```bash
    git clone https://github.com/eoliverasdev/kanban-laravel.git
 
 2. Instalar dependencias:
@@ -75,15 +76,15 @@ migrations/
 
 ## ▶️ Uso
 
-1.Regístrate o inicia sesión.
+1. Regístrate o inicia sesión.
 
-2.Crea un tablero desde el panel principal.
+2. Crea un tablero desde el panel principal.
 
-3.Añade notas a cada tablero.
+3. Añade notas a cada tablero.
 
-4.Cambia el estado de cada nota (To Do → Doing → Done).
+4. Cambia el estado de cada nota (To Do → Doing → Done).
 
-5.(Opcional) Usa drag & drop cuando esté disponible.
+5. (Opcional) Usa drag & drop cuando esté disponible.
 
 ## 📸 Capturas del proyecto
 
