@@ -72,11 +72,10 @@ migrations/
 6. Ejecutar migraciones
    ```
    php artisan migrate
-
+   
 7. Levantar servidor
    ```
    php artisan serve
-
 
 ## ▶️ Uso
 
