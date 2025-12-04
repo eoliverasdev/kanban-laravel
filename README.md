@@ -71,3 +71,32 @@ migrations/
 
 7. Levantar servidor
    php artisan serve
+
+
+## ▶️ Uso
+
+Regístrate o inicia sesión.
+
+Crea un tablero desde el panel principal.
+
+Añade notas a cada tablero.
+
+Cambia el estado de cada nota (To Do → Doing → Done).
+
+(Opcional) Usa drag & drop cuando esté disponible.
+
+## 📸 Capturas del proyecto
+
+## 🧠 Aprendizajes y retos técnicos
+
+Implementación de autenticación utilizando Laravel Breeze.
+
+Gestión de relaciones One-to-Many entre tableros y notas.
+
+Uso de migraciones y seeders para mantener versiones de la base de datos.
+
+Aplicación del patrón MVC en un entorno real.
+
+Organización del código siguiendo buenas prácticas de Laravel.
+
+Uso práctico de Git para control de versiones durante el desarrollo.
