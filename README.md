@@ -60,7 +60,7 @@ migrations/
    composer install
    npm install && npm run build
 
-3. Crear archivo .env
+3. Crear archivo .env:
    cp .env.example .env
 
 4. Generar key:
