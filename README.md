@@ -75,28 +75,36 @@ migrations/
 
 ## ▶️ Uso
 
-Regístrate o inicia sesión.
+1.Regístrate o inicia sesión.
 
-Crea un tablero desde el panel principal.
+2.Crea un tablero desde el panel principal.
 
-Añade notas a cada tablero.
+3.Añade notas a cada tablero.
 
-Cambia el estado de cada nota (To Do → Doing → Done).
+4.Cambia el estado de cada nota (To Do → Doing → Done).
 
-(Opcional) Usa drag & drop cuando esté disponible.
+5.(Opcional) Usa drag & drop cuando esté disponible.
 
 ## 📸 Capturas del proyecto
 
+<img width="817" height="688" alt="image" src="https://github.com/user-attachments/assets/60ff4b34-4116-41f4-84f8-cee8ec74237d" />
+
+<img width="646" height="412" alt="image" src="https://github.com/user-attachments/assets/d81c197f-5c86-4b5f-aea5-4948c2d9d466" />
+
+<img width="1413" height="586" alt="image" src="https://github.com/user-attachments/assets/f41f78d3-e5c0-407f-b47c-de1d45532dd4" />
+
+<img width="1410" height="576" alt="image" src="https://github.com/user-attachments/assets/6a930d09-b313-42f6-8260-f4b1ae4a1867" />
+
 ## 🧠 Aprendizajes y retos técnicos
 
-Implementación de autenticación utilizando Laravel Breeze.
+-Implementación de autenticación utilizando Laravel Breeze.
 
-Gestión de relaciones One-to-Many entre tableros y notas.
+-Gestión de relaciones One-to-Many entre tableros y notas.
 
-Uso de migraciones y seeders para mantener versiones de la base de datos.
+-Uso de migraciones y seeders para mantener versiones de la base de datos.
 
-Aplicación del patrón MVC en un entorno real.
+-Aplicación del patrón MVC en un entorno real.
 
-Organización del código siguiendo buenas prácticas de Laravel.
+-Organización del código siguiendo buenas prácticas de Laravel.
 
-Uso práctico de Git para control de versiones durante el desarrollo.
+-Uso práctico de Git para control de versiones durante el desarrollo.
