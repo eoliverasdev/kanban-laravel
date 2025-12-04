@@ -91,6 +91,8 @@ migrations/
 
 <img width="646" height="412" alt="image" src="https://github.com/user-attachments/assets/d81c197f-5c86-4b5f-aea5-4948c2d9d466" />
 
+<img width="455" height="572" alt="image" src="https://github.com/user-attachments/assets/5741f379-1c67-42d8-8666-716a583d3446" />
+
 <img width="1413" height="586" alt="image" src="https://github.com/user-attachments/assets/f41f78d3-e5c0-407f-b47c-de1d45532dd4" />
 
 <img width="1410" height="576" alt="image" src="https://github.com/user-attachments/assets/6a930d09-b313-42f6-8260-f4b1ae4a1867" />
