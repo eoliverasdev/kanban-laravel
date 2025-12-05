@@ -12,7 +12,7 @@ class AuthController extends Controller
     /**
      * Mostra el formulari d'inici de sessió.
      */
-    public function showLoginForm()
+    public function showLogin() // Abans: showLoginForm()
     {
         // Retorna la vista de login (resources/views/auth/login.blade.php)
         return view('auth.login');
@@ -46,7 +46,7 @@ class AuthController extends Controller
     /**
      * Mostra el formulari de registre.
      */
-    public function showRegisterForm()
+    public function showRegister() // Abans: showRegisterForm()
     {
         // Retorna la vista de registre (resources/views/auth/register.blade.php)
         return view('auth.register');
@@ -77,5 +77,18 @@ class AuthController extends Controller
         // 4. Redirecció a la pàgina de taulers
         return redirect()->route('boards.index')
                          ->with('success', 'Benvingut! El teu compte ha estat creat correctament.');
+    }
+    
+    /**
+     * Tanca la sessió (necessari per a la ruta 'logout').
+     */
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
     }
 }

@@ -20,11 +20,29 @@
                         <span class="text-2xl font-bold text-indigo-600">🧠 Kanban CAT</span>
                     </a>
                 </div>
-                <div class="hidden sm:ml-6 sm:flex sm:items-center">
-                    <a href="{{ route('boards.index') }}" class="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
-                        Taulers
-                    </a>
-                    {{-- AFEGIR ENLLAÇOS D'USUARI AQUÍ MÉS TARD --}}
+                
+                <div class="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+                    @auth
+                        {{-- Enllaç a Taulers (si està loguejat) --}}
+                        <a href="{{ route('boards.index') }}" class="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                            Taulers
+                        </a>
+
+                        {{-- Formulari de Tancament de Sessió (Logout) --}}
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit"
+                                    class="text-sm font-semibold text-red-500 hover:text-white px-3 py-1 rounded-lg transition duration-150 ease-in-out border border-red-500 hover:bg-red-600">
+                                Tancar Sessió
+                            </button>
+                        </form>
+                    @else
+                        {{-- Enllaç a Login (si no està loguejat) --}}
+                        <a href="{{ route('login') }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 px-3 py-1 rounded-lg border border-indigo-600">
+                            Iniciar Sessió
+                        </a>
+                        {{-- Opcionalment, afegir enllaç a registre aquí --}}
+                    @endauth
                 </div>
             </div>
         </div>

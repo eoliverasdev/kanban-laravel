@@ -8,14 +8,25 @@ use Illuminate\Support\Facades\Auth;
 
 // --- RUTES PÚBLIQUES ---
 Route::get('/', function () {
-    return view('welcome');
+    // 💡 SOLUCIÓ: Comprovem si l'usuari està autenticat
+    if (Auth::check()) {
+        // Si l'usuari està loguejat, el portem a la seva llista de taulers
+        return redirect()->route('boards.index');
+    }
+    
+    // Si l'usuari NO està loguejat, el redirigim a la pàgina de login
+    return redirect()->route('login');
 });
 
 // --- RUTES D'AUTENTICACIÓ ---
-// Aquí van les teves rutes d'autenticació, login, registre, etc.
-// Route::get('/login', ...);
-// Route::post('/login', ...);
-// ...
+// És CRUCIAL que aquesta ruta tingui el ->name('login')
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Opcional: Registre
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
 
 // --- RUTES PROTEGIDES (usuari autenticat) ---
 Route::middleware(['auth'])->group(function () {
