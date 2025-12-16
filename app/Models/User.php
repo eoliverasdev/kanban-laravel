@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany; // Esta es la línea que queremos usar
 
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -57,5 +58,13 @@ class User extends Authenticatable
     public function boards(): HasMany // Tipado para usar HasMany explícitamente
     {
         return $this->hasMany(Board::class, 'owner_id');
+    }
+
+    public const ROLE_VIEWER = 'viewer';
+    public const ROLE_ADMIN  = 'admin';
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
     }
 }

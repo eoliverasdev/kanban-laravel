@@ -3,7 +3,6 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     
-    <!-- Contingut del tauler principal -->
     <div class="flex justify-between items-center mb-6 border-b pb-4">
         <h1 class="text-3xl font-extrabold text-indigo-700">Els Meus Taulers</h1>
         <a href="{{ route('boards.create') }}"
@@ -24,8 +23,8 @@
                     <div class="flex justify-between items-center mt-4 border-t pt-3">
                         <span class="text-xs text-gray-400">Creat: {{ $board->created_at->diffForHumans() }}</span>
 
-                        <div class="space-x-3">
-                            {{-- AQUEST ÉS L'ENLLAÇ CLAU PER VEURE EL KANBAN DE NOTES --}}
+                        <div class="flex items-center space-x-3">
+                            {{-- Enllaç per veure el Kanban --}}
                             <a href="{{ route('boards.notes.index', $board) }}" 
                                class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition duration-150">
                                 Veure Kanban &rarr;
@@ -36,6 +35,18 @@
                                class="text-sm font-semibold text-gray-500 hover:text-gray-700 transition duration-150">
                                 Editar
                             </a>
+
+                            {{-- 🗑️ FORMULARI D'ELIMINACIÓ AFEGIT AQUÍ --}}
+                            <form action="{{ route('boards.destroy', $board) }}" method="POST" 
+                                  onsubmit="return confirm('Estàs segur que vols eliminar el tauler «{{ $board->title }}»? Aquesta acció és irreversible.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" 
+                                        class="text-sm font-semibold text-red-500 hover:text-red-700 transition duration-150 leading-none">
+                                    Eliminar
+                                </button>
+                            </form>
+                            {{-- 🗑️ FI DEL FORMULARI D'ELIMINACIÓ --}}
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Board;
 use App\Models\Note;
+use App\Models\User; // 👈 necessari per als responsables
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -36,6 +37,7 @@ class NoteController extends Controller
 
     /**
      * Comprova que el tauler és de l’usuari autenticat.
+     * (Serveix per LLEGIR: index, etc.)
      */
     private function checkBoardOwnership(Board $board)
     {
@@ -59,15 +61,44 @@ class NoteController extends Controller
     }
 
     /**
+     * Comprova que l’usuari pot GESTIONAR (crear/editar/esborrar/moure) les notes del tauler.
+     * Aquí fem la distinció viewer/admin.
+     */
+    private function ensureCanManage(Board $board)
+    {
+        // Primer, comprovem propietat / accés al tauler
+        $authCheck = $this->checkBoardOwnership($board);
+        if ($authCheck) return $authCheck;
+
+        $user = Auth::user();
+        $isApi = request()->ajax() || request()->wantsJson();
+
+        // Si no hi ha usuari o el role no és 'admin', bloquegem
+        if (!$user || $user->role !== 'admin') {
+            if ($isApi) {
+                return response()->json(
+                    ['error' => 'No tens permisos per modificar aquest tauler.'],
+                    403
+                );
+            }
+            abort(403, 'No tens permisos per modificar aquest tauler.');
+        }
+
+        return null;
+    }
+
+    /**
      * Llista de notes en format Kanban (3 columnes).
+     * Viewer i Admin poden veure.
      */
     public function index(Board $board)
     {
         $authCheck = $this->checkBoardOwnership($board);
         if ($authCheck) return $authCheck;
 
-        // Agrupem totes les notes del tauler per estat
+        // Agrupem totes les notes del tauler per estat + responsable
         $grouped = $board->notes()
+            ->with('responsible') // 👈 carreguem usuari responsable
             ->orderBy('created_at', 'asc')
             ->get()
             ->groupBy('status');
@@ -83,41 +114,52 @@ class NoteController extends Controller
             ];
         }
 
+        // Tots els usuaris disponibles com a responsables
+        $users = User::orderBy('name')->get();
+
         return view('notes.index', [
             'board'   => $board,
             'columns' => $columns,
+            'users'   => $users, // 👈 perquè el Blade pugui mostrar el <select>
         ]);
     }
 
     /**
      * Formulari de creació.
+     * Només admins.
      */
     public function create(Board $board)
     {
-        $authCheck = $this->checkBoardOwnership($board);
+        $authCheck = $this->ensureCanManage($board);
         if ($authCheck) return $authCheck;
 
         // Etiquetes d’estat per al select del formulari
         $note_statuses = self::STATUS_LABELS;
 
-        return view('notes.create', compact('board', 'note_statuses'));
+        // Usuaris per seleccionar responsable
+        $users = User::orderBy('name')->get();
+
+        return view('notes.create', compact('board', 'note_statuses', 'users'));
     }
 
     /**
      * Desa una nova nota.
+     * Només admins.
      */
     public function store(Request $request, Board $board)
     {
-        $authCheck = $this->checkBoardOwnership($board);
+        $authCheck = $this->ensureCanManage($board);
         if ($authCheck) return $authCheck;
 
         $validated = $request->validate([
-            'title'       => 'required|string|max:150',
-            'description' => 'nullable|string|max:500',
-            'status'      => ['required', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
+            'title'          => 'required|string|max:150',
+            'description'    => 'nullable|string|max:500',
+            'status'         => ['required', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
+            'responsible_id' => ['nullable', 'integer', 'exists:users,id'], // 👈 nou
+            'priority'      => ['required', 'string', 'in:baix,intermig,alt'], // 👈 nou
         ]);
 
-        $note = $board->notes()->create($validated)->fresh();
+        $note = $board->notes()->create($validated)->fresh('responsible');
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -128,6 +170,12 @@ class NoteController extends Controller
                     'description'  => $note->description,
                     'status'       => $note->status,
                     'status_label' => $this->statusLabel($note->status),
+                    'responsible'  => $note->responsible
+                        ? [
+                            'id'   => $note->responsible->id,
+                            'name' => $note->responsible->name,
+                          ]
+                        : null,
                 ],
             ], 201);
         }
@@ -139,10 +187,11 @@ class NoteController extends Controller
 
     /**
      * Formulari d’edició.
+     * Només admins.
      */
     public function edit(Board $board, Note $note)
     {
-        $authCheck = $this->checkBoardOwnership($board);
+        $authCheck = $this->ensureCanManage($board);
         if ($authCheck) return $authCheck;
 
         if ($note->board_id !== $board->id) {
@@ -150,16 +199,18 @@ class NoteController extends Controller
         }
 
         $note_statuses = self::STATUS_LABELS;
+        $users = User::orderBy('name')->get();
 
-        return view('notes.edit', compact('board', 'note', 'note_statuses'));
+        return view('notes.edit', compact('board', 'note', 'note_statuses', 'users'));
     }
 
     /**
      * Actualitza una nota (form o AJAX inline).
+     * Només admins.
      */
     public function update(Request $request, Board $board, Note $note)
     {
-        $authCheck = $this->checkBoardOwnership($board);
+        $authCheck = $this->ensureCanManage($board);
         if ($authCheck) return $authCheck;
 
         if ($note->board_id !== $board->id) {
@@ -167,10 +218,11 @@ class NoteController extends Controller
         }
 
         $validated = $request->validate([
-            'title'       => 'required|string|max:150',
-            'description' => 'nullable|string|max:500',
+            'title'          => 'required|string|max:150',
+            'description'    => 'nullable|string|max:500',
             // status opcional, però si ve ha de ser un dels 3
-            'status'      => ['nullable', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
+            'status'         => ['nullable', 'string', 'in:' . implode(',', self::ALLOWED_STATUSES)],
+            'responsible_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
         // Si no ens passa status, no el toquem
@@ -179,7 +231,7 @@ class NoteController extends Controller
         }
 
         $note->update($validated);
-        $fresh = $note->fresh();
+        $fresh = $note->fresh('responsible');
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -190,6 +242,13 @@ class NoteController extends Controller
                     'description'  => $fresh->description,
                     'status'       => $fresh->status,
                     'status_label' => $this->statusLabel($fresh->status),
+                    'responsible'  => $fresh->responsible
+                        ? [
+                            'id'   => $fresh->responsible->id,
+                            'name' => $fresh->responsible->name,
+                          ]
+                        : null,
+                        'priority'     => $fresh->priority,
                 ],
             ], 200);
         }
@@ -201,10 +260,11 @@ class NoteController extends Controller
 
     /**
      * Elimina una nota.
+     * Només admins.
      */
     public function destroy(Board $board, Note $note)
     {
-        $authCheck = $this->checkBoardOwnership($board);
+        $authCheck = $this->ensureCanManage($board);
         if ($authCheck) return $authCheck;
 
         if ($note->board_id !== $board->id) {
@@ -226,11 +286,11 @@ class NoteController extends Controller
 
     /**
      * Mou nota entre columnes (Drag & Drop).
-     * Espera AJAX (PATCH/POST) amb 'status' => pending|in_progress|done
+     * Només admins (viewer només pot mirar).
      */
     public function move(Request $request, Board $board, Note $note)
     {
-        $authCheck = $this->checkBoardOwnership($board);
+        $authCheck = $this->ensureCanManage($board);
         if ($authCheck) return $authCheck;
 
         if ($note->board_id !== $board->id) {
